@@ -131,19 +131,32 @@ function! s:ClearInput()
     match none
     call setbufvar('%','inputn','')
     call setbufvar('%','inputk','')
+    call s:Refresh()
 endfunction
 
-function! s:HighlightNotMatchedBnr(bnrs)
+function! s:HighlightNotMatchedBnr(keys)
     let p = ''
     let i = 0
-    if len(a:bnrs) == 0 | return | endif
-    for bnr in a:bnrs
+    let lines = []
+    if len(a:keys) == 0 | return | endif
+
+    for k in a:keys
         if i != 0 | let p .= '\|' | endif
-        let p .= ''.bnr
+        let lnr = k+2
+        if lnr < 10
+            let lnr = '0'.lnr
+        endif
+        call add(lines, lnr)
         let i += 1
     endfor
-    let p = '/^\s*\('.p.'\)\s.*$/'
-    exe 'match EasyBufferDisabled '.p
+
+    call sort(lines)
+    call reverse(lines)
+    setlocal modifiable
+    for lnr in lines
+        exe lnr.'delete'
+    endfor
+    setlocal nomodifiable
 endfunction
 " }}}
 
@@ -260,39 +273,16 @@ function! s:ListBuffers(unlisted)
     endfor
     if g:easybuffer_show_header
         call setline(1, 'easybuffer - buffer list (press key to select the buffer, press d to delete or D to wipeout buffer)')
-        call append(1,'<Key>  <Mode>  '.s:StrCenter('<Filetype>',maxftwidth).'  <BufName>')
+        call append(1,'<Key> '.s:StrCenter('<Filetype>',maxftwidth).'  <BufName>')
     endif
-    let keynr = 0
+    let keynr = 1
     for bnr in bnrlist
         let key = ''
         let keydict[keynr] = bnr
         let key = s:StrCenter(keynr,5)
         let keynr += 1
         let bnrs = s:StrCenter(''.bnr,7)
-        let mode = ''
         let bufmodified = getbufvar(bnr, "&mod")
-        if !buflisted(bnr)
-            let mode .= 'u'
-        endif
-        if bufwinnr('%') == bufwinnr(bnr)
-            let mode .= '%'
-        elseif bufnr('#') == bnr
-            let mode .= '#'
-        endif
-        if winbufnr(bufwinnr(bnr)) == bnr
-            let mode .= 'a'
-        else
-            let mode .= 'h'
-        endif
-        if !getbufvar(bnr, "&modifiable")
-            let mode .= '-'
-        elseif getbufvar(bnr, "&readonly")
-            let mode .= '='
-        endif
-        if getbufvar(bnr, "&modified")
-            let mode .= '+'
-        endif
-        let mode = ' '.s:StrRight(mode,5)
         let bname = bufname(bnr)
         if len(bname) > 0
             let bname = eval(g:easybuffer_bufname)
@@ -303,7 +293,7 @@ function! s:ListBuffers(unlisted)
             let bname = '[No Name]'
             let bufft = s:StrCenter('-',maxftwidth)
         endif
-        call append(line('$'),key.'  '.mode.'  '.bufft.'  '.bname)
+        call append(line('$'),key.' '.bufft.'  '.bname)
         if bnr == prevbnr
             call cursor(line('$'),0)
         endif
