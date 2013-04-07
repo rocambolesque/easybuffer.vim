@@ -273,7 +273,7 @@ function! s:ListBuffers(unlisted)
     endfor
     if g:easybuffer_show_header
         call setline(1, 'easybuffer - buffer list (press key to select the buffer, press d to delete or D to wipeout buffer)')
-        call append(1,'<Key> '.s:StrCenter('<Filetype>',maxftwidth).'  <BufName>')
+        call append(1,s:StrCenter('<Filetype>',maxftwidth).' <BufName> <Key>')
     endif
     let keynr = 1
     for bnr in bnrlist
@@ -293,7 +293,8 @@ function! s:ListBuffers(unlisted)
             let bname = '[No Name]'
             let bufft = s:StrCenter('-',maxftwidth)
         endif
-        call append(line('$'),key.' '.bufft.'  '.bname)
+        let bname = fnamemodify(bname, ":p:.")
+        call append(line('$'),bufft.' '.bname.' '.key)
         if bnr == prevbnr
             call cursor(line('$'),0)
         endif
